@@ -63,9 +63,14 @@ Como interface remota foi utilizado o software [MQTT Explorer](https://mqtt-expl
 Realize o download dos arquivos sbc_orangepi.c, nodemcu.ino e makefile.
 
 Transfira o arquivo sbc_orangepi.c e makefile para a Orange Pi PC Plus.
-Execute os seguintes comandos:
-``` $ make ```
-``` $ sudo ./main ```
+Execute o comando a seguir para compilar o código:
+```
+$ make
+```
+Em seguida execute o comando a seguir para executar o programa:
+```
+$ sudo ./main
+```
 
 Utilize o software [Arduino IDE](https://www.arduino.cc/en/software) para executar o arquivo nodemcu.ino, se certificando que a placa esteja configurada para receber códigos via OTA através do Wi-Fi.
 
