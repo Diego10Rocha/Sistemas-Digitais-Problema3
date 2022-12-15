@@ -253,12 +253,12 @@ void setLedState(){
 		ledState = 0;
 		//char *payload = SET_OFF_LED_NODEMCU;
 		//strcat(payload, "-1");
-		publish(&client, MQTT_PUBLISH_TOPIC_ESP, "0x06-1");
+		publish(client, MQTT_PUBLISH_TOPIC_ESP, "0x06-1");
 	}else{
 		ledState = 1;
 		//char *payload = SET_ON_LED_NODEMCU;
 		//strcat(payload, "-1");
-		publish(&client, MQTT_PUBLISH_TOPIC_ESP, "0x07-1");
+		publish(client, MQTT_PUBLISH_TOPIC_ESP, "0x07-1");
 	}
 }
 
@@ -461,19 +461,19 @@ int on_message(void *context, char *topicName, int topicLen, MQTTClient_message 
     
     
     
-    if(strcmp(payload, "0x200")) {
+    if(strcmp(payload, "0x200") == 0) {
     	printf("NodeMCU executando normalmente\n");
     	//escreverEmDuasLinhas("NodeMCU exec.", "normalmente");
     	
-    } else if(strcmp(payload, "0x1F")) {
+    } else if(strcmp(payload, "0x1F") == 0) {
     	printf("NodeMCU com problema\n");
     	//escreverEmDuasLinhas("NodeMCU com", "problema");
     	
-    } else if(strcmp(payload, "0x06")) {
+    } else if(strcmp(payload, "0x06") == 0) {
     	printf("LED ligado");
     	//escreverEmDuasLinhas("Led", "aceso");
     	
-    } else if(strcmp(payload, "0x07")) {
+    } else if(strcmp(payload, "0x07") == 0) {
     	printf("LED apagao");
     	//escreverEmDuasLinhas("Led", "apagado");
     } else if(strcmp(payload,"0xFA") == 0){
