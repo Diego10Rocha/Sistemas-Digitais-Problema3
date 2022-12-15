@@ -21,11 +21,11 @@
 #define BUTTON_3 25
 
 //Codigos de requisição
-#define GET_NODEMCU_SITUACAO 0x03
-#define GET_NODEMCU_ANALOGICO_INPUT 0x04
-#define GET_NODEMCU_DIGITAL_INPUT 0x05
-#define SET_ON_LED_NODEMCU 0x06
-#define SET_OFF_LED_NODEMCU 0x07
+#define GET_NODEMCU_SITUACAO "0x03"
+#define GET_NODEMCU_ANALOGICO_INPUT "0x04"
+#define GET_NODEMCU_DIGITAL_INPUT "0x05"
+#define SET_ON_LED_NODEMCU "0x06"
+#define SET_OFF_LED_NODEMCU "0x07"
 
 #define USERNAME "aluno"
 #define PASSWORD "@luno*123"
@@ -36,8 +36,8 @@
 #define CLIENTID       "2022136"
 
 /* Substitua aqui os topicos de publish e subscribe por topicos exclusivos de sua aplicacao */
-#define MQTT_PUBLISH_TOPIC_ESP     "SBCESP"
-#define MQTT_SUBSCRIBE_TOPIC_ESP   "ESPSBC"
+#define MQTT_PUBLISH_TOPIC_ESP    "SBCESP"
+#define MQTT_SUBSCRIBE_TOPIC_ESP  "ESPSBC"
 #define MQTT_PUBLISH_TOPIC_SW     "SBCSW"
 #define MQTT_SUBSCRIBE_TOPIC_SW   "SWSBC"
 
@@ -59,12 +59,14 @@ int stopLoopSetTimeUnit = 0;
 int timeInterval = 1;
 char timeUnit = 's';
 int timeUnitAux = 0;
+long int timeSeconds = 0;
 
 // Led
 int ledState = 0;
 
 void escreverEmUmaLinha(char linha1[]);
 void escreverEmDuasLinhas(char linha1[], char linha2[]);
+void publishGetDigitalValue();
 
 void isPressed(int btt, int (*function)(int, int), int* controller, int minMax);
 void enter(int btt,void (*function)(void));
@@ -80,8 +82,16 @@ void configMenu();
 void setTimeInterval();
 void setTimeUnit();
 
-void publish(MQTTClient client, char* topic, unsigned char comando, unsigned char endereco);
+void publishTimeInterval();
+void sendRequestAnalogicSensor();
+
+void publish(MQTTClient client, char* topic, char* payload);
 int on_message(void *context, char *topicName, int topicLen, MQTTClient_message *message);
+
+void connlost(void *context, char *cause) {
+    printf("\nConexão perdida\n");
+    printf("     cause: %s\n", cause);
+}
 
 int main(){
 	wiringPiSetup();
@@ -96,7 +106,7 @@ int main(){
 	int mqtt_connect = -1;
 	
 	MQTTClient_connectOptions conn_opts = MQTTClient_connectOptions_initializer;
-	conn_opts.keepAliveInterval = 20;
+	conn_opts.keepAliveInterval = 1500;
 	conn_opts.cleansession = 1;
 	conn_opts.username = USERNAME;
 	conn_opts.password = PASSWORD;
@@ -105,7 +115,7 @@ int main(){
 	
 	/* Inicializacao do MQTT (conexao & subscribe) */
    	MQTTClient_create(&client, MQTT_ADDRESS, CLIENTID, MQTTCLIENT_PERSISTENCE_NONE, NULL);
-   	MQTTClient_setCallbacks(client, NULL, NULL, on_message, NULL);
+   	MQTTClient_setCallbacks(client, NULL, connlost, on_message, NULL);
 
 	mqtt_connect = MQTTClient_connect(client, &conn_opts);
 	
@@ -114,62 +124,54 @@ int main(){
        		exit(-1);
 	}
 	
-	MQTTClient_subscribe(client, MQTT_SUBSCRIBE_TOPIC_ESP, 0);
-	/*while(1) {
-	
-		if(digitalRead(BUTTON_1) == 0) {
-			printf("enviando mensagem\n");
-			publish(client, MQTT_PUBLISH_TOPIC, "Teste MQTT");
-		}
-		
-	}*/
+	MQTTClient_subscribe(client, MQTT_SUBSCRIBE_TOPIC_ESP, 2);
+	MQTTClient_subscribe(client, MQTT_SUBSCRIBE_TOPIC_SW, 2);
+	//publish(client, MQTT_PUBLISH_TOPIC_ESP, SET_ON_LED_NODEMCU);
 
 	while(!stopLoopMainMenu){
 		switch(currentMenuOption){
 			case 0:
 				escreverEmDuasLinhas("     MI - SD    ", "Protocolo MQTT");
-				isPressed(BUTTON_2,increment,&currentMenuOption,5);
-				isPressed(BUTTON_1,decrement,&currentMenuOption,1);
+				isPressed(BUTTON_2,increment, &currentMenuOption,5);
+				isPressed(BUTTON_1,decrement, &currentMenuOption,1);
 				break;
 			case 1:
 				escreverEmDuasLinhas("LEITURA:        ", "SENSOR DIGITAL  ");
 				isPressed(BUTTON_2,increment,&currentMenuOption,5);
 				isPressed(BUTTON_1,decrement,&currentMenuOption,1);
-				enter(BUTTON_3,sensorsMenu);
+				enter(BUTTON_3, sensorsMenu);
 				break;
 			case 2:
 				escreverEmDuasLinhas("LEITURA:        ", "SENSOR ANALOGICO");
-				isPressed(BUTTON_2,increment,&currentMenuOption,5);
-				isPressed(BUTTON_1,decrement,&currentMenuOption,1);
-				publish(client, MQTT_PUBLISH_TOPIC_ESP, GET_NODEMCU_ANALOGICO_INPUT, 0);
+				isPressed(BUTTON_2,increment, &currentMenuOption,5);
+				isPressed(BUTTON_1,decrement, &currentMenuOption,1);
+				enter(BUTTON_3, sendRequestAnalogicSensor);
 				break;
 			case 3:
 				lcdHome(lcd);
 				if(ledState == 0){
 					lcdPrintf(lcd,"LED:    ON  %cOFF",0xFF);
-					publish(client, MQTT_PUBLISH_TOPIC_ESP, SET_ON_LED_NODEMCU, 0);
 				}else{
 					lcdPrintf(lcd,"LED:    ON%c  OFF",0xFF);
-					publish(client, MQTT_PUBLISH_TOPIC_ESP, SET_OFF_LED_NODEMCU, 0);
 				}
 				lcdPosition(lcd,0,1);
 				lcdPuts(lcd,"                ");
-				isPressed(BUTTON_2,increment,&currentMenuOption,5);
-				isPressed(BUTTON_1,decrement,&currentMenuOption,1);
+				isPressed(BUTTON_2,increment, &currentMenuOption,5);
+				isPressed(BUTTON_1,decrement, &currentMenuOption,1);
 				enter(BUTTON_3,setLedState);
 				break;
 
 			case 4:
 				escreverEmUmaLinha("  CONFIGURACOES ");
-				isPressed(BUTTON_2,increment,&currentMenuOption,5);
-				isPressed(BUTTON_1,decrement,&currentMenuOption,1);
+				isPressed(BUTTON_2,increment, &currentMenuOption,5);
+				isPressed(BUTTON_1,decrement, &currentMenuOption,1);
 				enter(BUTTON_3,configMenu);
 				break;
 
 			case 5:
 				escreverEmUmaLinha("      SAIR      ");
-				isPressed(BUTTON_2,increment,&currentMenuOption,5);
-				isPressed(BUTTON_1,decrement,&currentMenuOption,1);
+				isPressed(BUTTON_2,increment, &currentMenuOption,5);
+				isPressed(BUTTON_1,decrement, &currentMenuOption,1);
 				close(BUTTON_3,&stopLoopMainMenu);
 				break;
 
@@ -178,6 +180,12 @@ int main(){
 	escreverEmDuasLinhas("     MI - SD    ", "Protocolo MQTT");
     	exit(-1);
 	return 0;	
+}
+
+void sendRequestAnalogicSensor(){
+	//char *payload = GET_NODEMCU_ANALOGICO_INPUT;
+	//strcat(payload, "-1");
+	publish(client, MQTT_PUBLISH_TOPIC_ESP, "0x04-1");
 }
 
 void escreverEmUmaLinha(char linha1[]) {
@@ -243,8 +251,14 @@ int decrement(int valueController, int min){
 void setLedState(){
 	if(ledState == 1){
 		ledState = 0;
+		//char *payload = SET_OFF_LED_NODEMCU;
+		//strcat(payload, "-1");
+		publish(&client, MQTT_PUBLISH_TOPIC_ESP, "0x06-1");
 	}else{
 		ledState = 1;
+		//char *payload = SET_ON_LED_NODEMCU;
+		//strcat(payload, "-1");
+		publish(&client, MQTT_PUBLISH_TOPIC_ESP, "0x07-1");
 	}
 }
 
@@ -252,35 +266,27 @@ void configMenu(){
 	while(!stopLoopConfigMenu){
 		switch(currentMenuIntervalOption){
 			case 1:
-				lcdHome(lcd);
-				lcdPuts(lcd,"     AJUSTAR    ");
-				lcdPosition(lcd,0,1);
-				lcdPuts(lcd,"    INTERVALO   ");
-				isPressed(BUTTON_2,increment,&currentMenuIntervalOption,3);
-				isPressed(BUTTON_1,decrement,&currentMenuIntervalOption,1);
+				escreverEmDuasLinhas("     AJUSTAR    ", "    INTERVALO   ");
+				isPressed(BUTTON_2,increment, &currentMenuIntervalOption,3);
+				isPressed(BUTTON_1,decrement, &currentMenuIntervalOption,1);
 				enter(BUTTON_3,setTimeInterval);
 				break;
 			case 2:
-				lcdHome(lcd);
-				lcdPuts(lcd,"     AJUSTAR    ");
-				lcdPosition(lcd,0,1);
-				lcdPuts(lcd,"   UNID. TEMPO  ");
-				isPressed(BUTTON_2,increment,&currentMenuIntervalOption,3);
-				isPressed(BUTTON_1,decrement,&currentMenuIntervalOption,1);
+				escreverEmDuasLinhas("     AJUSTAR    ", "   UNID. TEMPO  ");
+				isPressed(BUTTON_2,increment, &currentMenuIntervalOption,3);
+				isPressed(BUTTON_1,decrement, &currentMenuIntervalOption,1);
 				enter(BUTTON_3,setTimeUnit);
 				break;
 			case 3:
+				escreverEmUmaLinha("      SAIR      ");
 				close(BUTTON_3, &stopLoopConfigMenu);
-				lcdHome(lcd);
-				lcdPuts(lcd,"      SAIR      ");
-				lcdPosition(lcd,0,1);
-				lcdPuts(lcd,"                ");
-				isPressed(BUTTON_2,increment,&currentMenuIntervalOption,3);
-				isPressed(BUTTON_1,decrement,&currentMenuIntervalOption,1);
+				isPressed(BUTTON_2,increment, &currentMenuIntervalOption,3);
+				isPressed(BUTTON_1,decrement, &currentMenuIntervalOption,1);
 				break;
 		}
 		
 	}
+	
 	stopLoopConfigMenu = 0;
 	currentMenuIntervalOption = 1;
 	lcdClear(lcd);
@@ -290,77 +296,58 @@ void sensorsMenu(){
 	while(!stopLoopSensorsMenu){
 		switch(currentMenuSensorOption){
 			case 1:
-				lcdHome(lcd);
-				lcdPuts(lcd,"    SENSOR D0   ");
-				lcdPosition(lcd,0,1);
-				lcdPuts(lcd,"                ");
-				isPressed(BUTTON_2,increment,&currentMenuSensorOption,9);
-				isPressed(BUTTON_1,decrement,&currentMenuSensorOption,1);
+				escreverEmUmaLinha("    SENSOR D0   ");
+				isPressed(BUTTON_2,increment, &currentMenuSensorOption,9);
+				isPressed(BUTTON_1,decrement, &currentMenuSensorOption,1);
+				enter(BUTTON_3, publishGetDigitalValue);
 				break;
 			case 2:
-				lcdHome(lcd);
-				lcdPuts(lcd,"    SENSOR D1   ");
-				lcdPosition(lcd,0,1);
-				lcdPuts(lcd,"                ");
-				isPressed(BUTTON_2,increment,&currentMenuSensorOption,9);
-				isPressed(BUTTON_1,decrement,&currentMenuSensorOption,1);
+				escreverEmUmaLinha("    SENSOR D1   ");
+				isPressed(BUTTON_2,increment, &currentMenuSensorOption,9);
+				isPressed(BUTTON_1,decrement, &currentMenuSensorOption,1);
+				enter(BUTTON_3, publishGetDigitalValue);
 				break;
 			case 3:
-			    lcdHome(lcd);
-				lcdPuts(lcd,"    SENSOR D2   ");
-				lcdPosition(lcd,0,1);
-				lcdPuts(lcd,"                ");
+				escreverEmUmaLinha("    SENSOR D2   ");
 				isPressed(BUTTON_2,increment,&currentMenuSensorOption,9);
 				isPressed(BUTTON_1,decrement,&currentMenuSensorOption,1);
+				enter(BUTTON_3, publishGetDigitalValue);
 				break;
 			case 4:
-				lcdHome(lcd);
-				lcdPuts(lcd,"    SENSOR D3   ");
-				lcdPosition(lcd,0,1);
-				lcdPuts(lcd,"                ");
-				isPressed(BUTTON_2,increment,&currentMenuSensorOption,9);
-				isPressed(BUTTON_1,decrement,&currentMenuSensorOption,1);
+				escreverEmUmaLinha("    SENSOR D3   ");
+				isPressed(BUTTON_2,increment, &currentMenuSensorOption,9);
+				isPressed(BUTTON_1,decrement, &currentMenuSensorOption,1);
+				enter(BUTTON_3, publishGetDigitalValue);
 				break;
 			case 5:
-				lcdHome(lcd);
-				lcdPuts(lcd,"    SENSOR D4   ");
-				lcdPosition(lcd,0,1);
-				lcdPuts(lcd,"                ");
+				escreverEmUmaLinha("    SENSOR D4   ");
 				isPressed(BUTTON_2,increment,&currentMenuSensorOption,9);
 				isPressed(BUTTON_1,decrement,&currentMenuSensorOption,1);
+				enter(BUTTON_3, publishGetDigitalValue);
 				break;
 			case 6:
-				lcdHome(lcd);
-				lcdPuts(lcd,"    SENSOR D5   ");
-				lcdPosition(lcd,0,1);
-				lcdPuts(lcd,"                ");
-				isPressed(BUTTON_2,increment,&currentMenuSensorOption,9);
-				isPressed(BUTTON_1,decrement,&currentMenuSensorOption,1);
+				escreverEmUmaLinha("    SENSOR D5   ");
+				isPressed(BUTTON_2,increment, &currentMenuSensorOption,9);
+				isPressed(BUTTON_1,decrement, &currentMenuSensorOption,1);
+				enter(BUTTON_3, publishGetDigitalValue);
 				break;
 			case 7:
-				lcdHome(lcd);
-				lcdPuts(lcd,"    SENSOR D6   ");
-				lcdPosition(lcd,0,1);
-				lcdPuts(lcd,"                ");
-				isPressed(BUTTON_2,increment,&currentMenuSensorOption,9);
-				isPressed(BUTTON_1,decrement,&currentMenuSensorOption,1);
+				escreverEmUmaLinha("    SENSOR D6   ");
+				isPressed(BUTTON_2,increment, &currentMenuSensorOption,9);
+				isPressed(BUTTON_1,decrement, &currentMenuSensorOption,1);
+				enter(BUTTON_3, publishGetDigitalValue);
 				break;
 			case 8:
-				lcdHome(lcd);
-				lcdPuts(lcd,"    SENSOR D7   ");
-				lcdPosition(lcd,0,1);
-				lcdPuts(lcd,"                ");
-				isPressed(BUTTON_2,increment,&currentMenuSensorOption,9);
-				isPressed(BUTTON_1,decrement,&currentMenuSensorOption,1);
+				escreverEmUmaLinha("    SENSOR D7   ");
+				isPressed(BUTTON_2,increment, &currentMenuSensorOption,9);
+				isPressed(BUTTON_1,decrement, &currentMenuSensorOption,1);
+				enter(BUTTON_3, publishGetDigitalValue);
 				break;
 			case 9:
-				lcdHome(lcd);
-				lcdPuts(lcd,"      SAIR      ");
-				lcdPosition(lcd,0,1);
-				lcdPuts(lcd,"                ");
-				isPressed(BUTTON_2,increment,&currentMenuSensorOption,9);
-				isPressed(BUTTON_1,decrement,&currentMenuSensorOption,1);
-				close(BUTTON_3,&stopLoopSensorsMenu);
+				escreverEmUmaLinha("      SAIR      ");
+				isPressed(BUTTON_2,increment, &currentMenuSensorOption,9);
+				isPressed(BUTTON_1,decrement, &currentMenuSensorOption,1);
+				close(BUTTON_3, &stopLoopSensorsMenu);
 				break;
 		}	
 	}
@@ -387,6 +374,13 @@ void setTimeInterval(){
 		isPressed(BUTTON_2,increment,&timeInterval,10);
 		isPressed(BUTTON_1,decrement,&timeInterval,1);
 		close(BUTTON_3,&stopLoopSetTimeInterval);
+	}
+	if(timeUnit == 'h'){
+		timeSeconds = timeInterval * 3600;
+	} else if(timeUnit == 'm'){
+		timeSeconds = timeInterval * 60;
+	}else{
+		timeSeconds = timeInterval; 
 	}
 	stopLoopSetTimeInterval = 0;
 	lcdClear(lcd);
@@ -416,24 +410,35 @@ void setTimeUnit(){
 		lcdPuts(lcd,"                ");	
 		isPressed(BUTTON_2,increment,&timeUnitAux,2);
 		isPressed(BUTTON_1,decrement,&timeUnitAux,0);
-		close(BUTTON_3,&stopLoopSetTimeUnit);	
+		enter(BUTTON_3,publishTimeInterval);
+		//close(BUTTON_3,&stopLoopSetTimeUnit);	
 	}
 	lcdClear(lcd);
 	stopLoopSetTimeUnit = 0;
+}
+
+void publishTimeInterval(){
+	stopLoopSetTimeUnit = 1;
+	char buf[10];
+	sprintf(buf,"%ld",timeSeconds);
+	publish(client, MQTT_PUBLISH_TOPIC_ESP,buf);
+}
+
+void publishGetDigitalValue() {
+		char *payload;
+		//strcat(payload, "-");
+		//strcat(payload, currentMenuSensorOption);
+		sprintf(payload,"%s-%i", GET_NODEMCU_DIGITAL_INPUT, currentMenuSensorOption);
+	publish(client, MQTT_PUBLISH_TOPIC_ESP, payload);
 }
 
 /* Funcao: publicacao de mensagens MQTT
  * Parametros: cleinte MQTT, topico MQTT and payload
  * Retorno: nenhum
 */
-void publish(MQTTClient client, char* topic, unsigned char comando, unsigned char endereco) {
+void publish(MQTTClient client, char* topic, char* payload) {
+		printf("Mensagem enviada! \n\rTopico: %s Mensagem: %s\n", topic, payload);
     MQTTClient_message pubmsg = MQTTClient_message_initializer;
-    char tx_buffer[10];
-	char *payload;
-	payload = &tx_buffer[0];
-	*payload++ = comando;
-	*payload++ = endereco;
- 
     pubmsg.payload = payload;
     pubmsg.payloadlen = strlen(pubmsg.payload);
     pubmsg.qos = 1;
@@ -452,10 +457,48 @@ int on_message(void *context, char *topicName, int topicLen, MQTTClient_message 
  
     /* Mostra a mensagem recebida */
     printf("Mensagem recebida! \n\rTopico: %s Mensagem: %s\n", topicName, payload);
-    escreverEmDuasLinhas("Mensagem:", payload);
+    //escreverEmDuasLinhas("Mensagem:", payload);
+    
+    
+    
+    if(strcmp(payload, "0x200")) {
+    	printf("NodeMCU executando normalmente\n");
+    	//escreverEmDuasLinhas("NodeMCU exec.", "normalmente");
+    	
+    } else if(strcmp(payload, "0x1F")) {
+    	printf("NodeMCU com problema\n");
+    	//escreverEmDuasLinhas("NodeMCU com", "problema");
+    	
+    } else if(strcmp(payload, "0x06")) {
+    	printf("LED ligado");
+    	//escreverEmDuasLinhas("Led", "aceso");
+    	
+    } else if(strcmp(payload, "0x07")) {
+    	printf("LED apagao");
+    	//escreverEmDuasLinhas("Led", "apagado");
+    } else if(strcmp(payload,"0xFA") == 0){
+			printf("Intervalo mudado\n");
+    } else {
+    		printf("Teste\n");
+				char comando;
+				char *token = strtok(payload, "-");
+				//strcpy(comando, token);
+				if(strcmp(token, "0x01")) {
+					char leitura_sensor = strtok(NULL, "");
+					printf("Leitura do sensor analógico: %s", leitura_sensor);
+					
+				} else if(strcmp(token, "0x02")) {
+					char *leitura_sensor= strtok(NULL, "");
+					printf("LVL Sensor: %s\n", leitura_sensor);
+					char value [16];
+					sprintf(value, "%s", leitura_sensor);
+					//escreverEmDuasLinhas("Digital val:", value);
+
+				}
+		} 
  
     /* Faz echo da mensagem recebida */
-    //publish(client, MQTT_PUBLISH_TOPIC_ESP, payload);
+    publish(client, MQTT_PUBLISH_TOPIC_ESP, payload);
  
     MQTTClient_freeMessage(&message);
     MQTTClient_free(topicName);
