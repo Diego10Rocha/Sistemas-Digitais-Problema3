@@ -17,6 +17,7 @@ As requisições e os dados dos sensores são transmitidos via MQTT e o SBC arma
 - Display LCD Hitachi HD44780U
 - Botões
 - ESP8266 NodeMCU ESP-12
+- Software MQTT Explorer
 
 ### O protocolo MQTT
 O protocolo de comunicação utilizado é o MQTT (Message Queuing Telemetry Transport ou Transporte de Filas de Mensagem de Telemetria), que permite a transmissão e recebimento de mensagens através do modelo Publisher-Subscriber, em que os dispositivos podem publicar ou receber mensagens a depender da sua função no sistema.
