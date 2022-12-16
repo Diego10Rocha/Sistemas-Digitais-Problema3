@@ -169,6 +169,7 @@ int main(){
 	
 	MQTTClient_subscribe(client, MQTT_SUBSCRIBE_TOPIC_ESP_RESPONSE, 2);
     MQTTClient_subscribe(client, MQTT_SUBSCRIBE_TOPIC_ESP_RESPONSE_SENSOR_DIGITAL, 2);
+    MQTTClient_subscribe(client, MQTT_SUBSCRIBE_TOPIC_ESP_RESPONSE_SENSOR_ANALOGICO, 2);
     MQTTClient_subscribe(client, MQTT_SUBSCRIBE_TOPIC_ESP_RESPONSE_HISTORY_SENSOR_DIGITAL, 2);
 	MQTTClient_subscribe(client, MQTT_SUBSCRIBE_TOPIC_SW, 2);
 
@@ -765,7 +766,7 @@ int on_message(void *context, char *topicName, int topicLen, MQTTClient_message 
     
  
     /* Faz echo da mensagem recebida */
-    publish(client, topicName, payload);//WARNING, WARNING, WARNING -> SE NÃO FUNCIONAR É PQ DO topicName -> REMOVER O PUBLISH.
+    publish(client, topicName, payload);//WARNING, WARNING, WARNING -> SE NÃO FUNCIONAR É PQ DO topicName -> REMOVER O PUBLISH
  
     MQTTClient_freeMessage(&message);
     MQTTClient_free(topicName);
