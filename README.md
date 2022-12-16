@@ -96,7 +96,7 @@ Para visualizar as informações dos tópicos através do software MQTT Explorer
 
 [ESP8266mDNS library](https://www.arduino.cc/reference/en/libraries/esp8266_mdns/)
 
-[WifiUdp library](https://www.arduino.cc/reference/en/libraries/wifi/wifiudp/)
+[WifiUDP library](https://www.arduino.cc/reference/en/libraries/wifi/wifiudp/)
 
 [ArduinoOTA](https://www.arduino.cc/reference/en/libraries/arduinoota/)
 
