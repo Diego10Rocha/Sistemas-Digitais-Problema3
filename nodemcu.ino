@@ -126,7 +126,9 @@ void reconnect_MQTT(){
   //if (MQTT.connect(clientId.c_str(),mqtt_username,mqtt_password)) {
   if (MQTT.connect(clientId.c_str())) {
     Serial.println("connected");
-    MQTT.subscribe(REQUEST);
+    MQTT.subscribe(MQTT_SUBSCRIBE_TOPIC_ESP_REQUEST);
+    MQTT.subscribe(MQTT_SUBSCRIBE_TOPIC_ESP_REQUEST_SENSOR_DIGITAL);
+    MQTT.subscribe(MQTT_SUBSCRIBE_TOPIC_ESP_TIMER_INTERVAL);
   } else {
     Serial.print("failed, rc=");
     Serial.print(MQTT.state());
