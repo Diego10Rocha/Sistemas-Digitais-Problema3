@@ -7,12 +7,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-//Definicoes
-//#ifndef STASSID
-//#define STASSID "Nina"
-//#define STAPSK  "paralelogramo01"
-//#endif
-
 #ifndef STASSID
 #define STASSID "INTELBRAS"
 #define STAPSK  "Pbl-Sistemas-Digitais"
