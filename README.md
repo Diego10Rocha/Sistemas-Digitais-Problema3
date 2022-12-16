@@ -20,7 +20,7 @@ As requisições e os dados dos sensores são transmitidos via MQTT e o SBC arma
 - Software MQTT Explorer
 
 ### O protocolo MQTT
-O protocolo de comunicação utilizado é o MQTT (Message Queuing Telemetry Transport ou Transporte de Filas de Mensagem de Telemetria), que permite a transmissão e recebimento de mensagens através do modelo Publisher-Subscriber, em que os dispositivos podem publicar ou receber mensagens a depender da sua função no sistema.
+O protocolo de comunicação utilizado é o [MQTT](https://mqtt.org/) (Message Queuing Telemetry Transport ou Transporte de Filas de Mensagem de Telemetria), que permite a transmissão e recebimento de mensagens através do modelo Publisher-Subscriber, em que os dispositivos podem publicar ou receber mensagens a depender da sua função no sistema.
 
 As mensagens são enviadas através de tópicos, que funcionam como endereços pelo quais as mensagens serão enviadas. Um dispositivo pode emitir uma mensagem para determinado tópico, sendo chamado de publicador (publisher) ou receber uma mensagem de um tópico, sendo chamado de inscrito (subscriber). Esses tópicos ficam organizados em um servidor denominado broker que é responsável por intermediar as comunicações, tornando possível o recebimento, enfileiramento e envio das mensagens. Os dispositivos que têm capacidade de interagir com o broker são chamados de clientes.
 
