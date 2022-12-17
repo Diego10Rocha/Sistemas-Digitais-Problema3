@@ -10,7 +10,7 @@ O objetivo deste projeto foi a implementação de um sistema Iot com o uso do pr
 
 O sistema proposto é composto por três módulos: o do ESP8266, a SBC e a interface em aplicativo, todavia o implementado é composto por apenasa dois módulos e um software externo utilizado em testes que foi utilizado como interface que é o MQTT Explorer. Mas de forma geral foi implementado o protocolo de comunicação MQTT entre uma SBC (Single Board Computer) Orange Pi PC Plus e um ESP8266 NodeMCU ESP-12, o protocolo não ocorre entre a SBC e o software externo. Primeiramente não foi implementado na SBC uma comunicação com um outro sistema além do ESP8266 , além disso o software consegue ver qualquer requisição que tenha sido feita por meio do Broker do LEDS.
 
-![diagrama.drawio.png](./resources/diagrama.drawio.png)
+![diagrama.drawio.png](./resources/diagrama.drawio.png "Diagrama da arquitetura do sistema proposto")
 
 #### Recursos utilizados
 - Orange Pi PC Plus
