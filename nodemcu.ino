@@ -24,7 +24,7 @@ const char *mqtt_password = "@luno*123";
 byte ledState = HIGH;
 String address = "D0";
 char activeSensors[] = {'1','1','0','0','0','0','0','0'};
-unsigned int sendInterval = 10000;
+unsigned int sendInterval = 200000;
 // Comandos de resposta
 
 #define ANALOG_INPUT_VALUE "0x01"
@@ -65,6 +65,10 @@ unsigned int sendInterval = 10000;
 WiFiClient espClient;
 PubSubClient MQTT(espClient);
 
+IPAddress local_IP(10, 0, 0, 107);
+IPAddress gateway(10, 0, 0, 1);
+IPAddress subnet(255, 255, 0, 0);
+
 void setTimeInterval(int sec);
 char getDigitalValue(String addr);
 void sendDigitalValues();
@@ -77,12 +81,13 @@ void connectWifi_OTA(){
   delay(10);
   Serial.println("Booting");
   WiFi.mode(WIFI_STA);
+  WiFi.config(local_IP, gateway, subnet);
   WiFi.begin(ssid, password);
   while (WiFi.waitForConnectResult() != WL_CONNECTED) {
     Serial.println("Connection Failed! Rebooting...");
     delay(5000);
     ESP.restart();}
-  ArduinoOTA.setHostname("ESP-10.0.0.111");
+  ArduinoOTA.setHostname("ESP-10.0.0.107");
 
   ArduinoOTA.onStart([]() {
     String type;
@@ -123,8 +128,8 @@ void connectWifi_OTA(){
 void reconnect_MQTT(){
   Serial.print("Attempting MQTT connection...");
   String clientId = "esp8266";
-  //if (MQTT.connect(clientId.c_str(),mqtt_username,mqtt_password)) {
-  if (MQTT.connect(clientId.c_str())) {
+  if (MQTT.connect(clientId.c_str(),mqtt_username,mqtt_password)) {
+  //if (MQTT.connect(clientId.c_str())) {
     Serial.println("connected");
     MQTT.subscribe(MQTT_SUBSCRIBE_TOPIC_ESP_REQUEST);
     MQTT.subscribe(MQTT_SUBSCRIBE_TOPIC_ESP_REQUEST_SENSOR_DIGITAL);
@@ -141,6 +146,7 @@ void reconnect_MQTT(){
 
 //espera um playload separado por -, a primeira parte é a msg a segunda o endereço
 void callback(char* topic, byte* payload, unsigned int length) {
+  Serial.print("Ola eu sou o callback");
   String msg = "";
   /*String adress;  
   //Serial.print("Ola eu sou o callback!");
@@ -169,6 +175,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
   }
   //strcmp compara se o topico é igual a requisição 
   if (strcmp(topic, MQTT_SUBSCRIBE_TOPIC_ESP_REQUEST) == 0) {
+    Serial.print("Ola eu sou uma requisicao");
 
     //Liga o LED
     if (msg == SET_ON_NODEMCU_LED) {
@@ -192,10 +199,11 @@ void callback(char* topic, byte* payload, unsigned int length) {
     }
   } else if(strcmp(topic, MQTT_SUBSCRIBE_TOPIC_ESP_REQUEST_SENSOR_DIGITAL) == 0) {
     // VALOR DIGITAL     
+    Serial.print("Eu sou a solicitacao do digital");
       DigitalValue(msg);
   } else if(strcmp(topic, MQTT_SUBSCRIBE_TOPIC_ESP_TIMER_INTERVAL) == 0) {
-         
-      setTimeInterval(payload.toInt());
+         Serial.print("Me vê tudo ai parceiro");
+      setTimeInterval(msg.toInt());
   }
 }
 //enviar valor do sensor digital
@@ -220,7 +228,7 @@ void DigitalValue(String addr) {
   } else if (addr == "8") {
     value = digitalRead(D7);
   }
-  snprintf(buff,"%d",value);
+  snprintf(buff,4,"%d",value);
   MQTT.publish(MQTT_PUBLISH_TOPIC_ESP_RESPONSE_SENSOR_DIGITAL,buff);
 }
 
@@ -228,7 +236,7 @@ void DigitalValue(String addr) {
 void sendAnalogValue() {
     int value = analogRead(A0);
     char buf[10];
-    snprintf(buf,"%d",value);
+    snprintf(buf,5,"%d",value);
     MQTT.publish(MQTT_PUBLISH_TOPIC_ESP_RESPONSE_SENSOR_ANALOGICO, buf);
 }
 
@@ -248,9 +256,44 @@ void sendDigitalValues() {
   }
   
   sprintf(msg,"D0-%c,D1-%c,D2-%c,D3-%c,D4-%c,D5-%c,D6-%c,D7-%c,HH:MM:SS\0",buf[0],buf[1],buf[2],buf[3],buf[4],buf[5],buf[6],buf[7]);
+  Serial.print(msg);
+  Serial.print("/n");
   MQTT.publish(MQTT_PUBLISH_TOPIC_ESP_RESPONSE_HISTORY_SENSOR_DIGITAL, msg);
 }
 
+//Retorna o valor de um sensor digital como string
+char getDigitalValue(String addr){
+
+  int value;
+  char valueCh;
+  char buff[4];
+  if (addr == "0") {
+    value = digitalRead(D0);
+  } else if (addr == "1") {
+    value = digitalRead(D1);
+  } else if (addr == "2") {
+    value = digitalRead(D2);
+  } else if (addr == "3") {
+    value = digitalRead(D3);
+  } else if (addr == "4") {
+    value = digitalRead(D4);
+  } else if (addr == "5") {
+    value = digitalRead(D5);
+  } else if (addr == "6") {
+    value = digitalRead(D6);
+  } else if (addr == "7") {
+    value = digitalRead(D7);
+  }
+  
+  if(value == 1){
+    valueCh = '1';
+  }else if(value == 0){
+    valueCh = '0';
+  }
+  return valueCh;
+  //return valueCh;
+  
+}
 //Liga e desliga o led
 void setLedState(byte state){
     digitalWrite(LED_BUILTIN,state);
@@ -261,18 +304,24 @@ void setLedState(byte state){
     }
 }
 
+//Retorna todos os sensores
 void sendAll() {
-  sendAnalogValue()
+  sendAnalogValue();
   sendDigitalValues();
 }
 
+
+//Thread que envia funcao
 TimedAction sendAction = TimedAction(sendInterval,sendAll);
 
+//Seta o intervalo de tempo ate a funcao sendAll ser chamada novamente 
 void setTimeInterval(int sec){
   sendInterval = sec * 1000;
   sendAction.setInterval(sendInterval);
 }
 
+//Configuracoes basicas a node
+//Pinagem do led, conexao do wifi, definicao do servidor, definicao do metodo de callback e chamada de reconect
 void setup() {
   pinMode(LED_BUILTIN,OUTPUT);
   connectWifi_OTA();
@@ -281,7 +330,9 @@ void setup() {
   reconnect_MQTT();
   
 }
-
+//Loop que verifica se o mqtt esta conectado, caso nao esteja tenta se reconectar
+//Mantem o status de rede com o id definido, estabelece o loop do cliente mqtt para que fique habil a respnder as interrupcoes
+//e verifica se ja é tempo de enviar os dados dos sensores
 void loop() {
   if(!MQTT.connected()){
     reconnect_MQTT();
