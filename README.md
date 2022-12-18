@@ -183,7 +183,7 @@ O intervalo de tempo é alterado por meio dos botões, um tópico deve ser alter
 
 #### Visualização de funcionamento 
 
-Aqui está um video demonstrando o uso do projeto
+Aqui está um video demonstrando o uso do projeto, basta clicar na imgem abaixo:
 
 [![Watch the video](./resources/projeto.jpeg)](https://drive.google.com/file/d/15PKNDO8mw185wtJEbV7gMRtnDF7k8z_G/view)
 
