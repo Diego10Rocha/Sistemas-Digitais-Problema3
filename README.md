@@ -1,4 +1,4 @@
-# Comunicação e gestão de dados com dispositivos IoT
+# IoT: A internet das Coisas
 O objetivo deste projeto foi a implementação de um sistema Iot com o uso do protocolo de comunicação MQTT a fim de entender como integrar diferentes sistemas. Desde da a integração de diferentes sensores e o controle desses em uma NodeMCU,  a qual se comunica com um computador central que possui uma interface local IHM composta por um display LCD, até uma interface remota em forma de aplicativo.
 
 ## Equipe de desenvolvimento
