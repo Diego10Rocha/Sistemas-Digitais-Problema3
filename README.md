@@ -185,7 +185,7 @@ O intervalo de tempo é alterado por meio dos botões, um tópico deve ser alter
 
 Aqui está um video demonstrando o uso do projeto
 
-[![Watch the video]()](./resources/)
+[![Watch the video]()](https://drive.google.com/file/d/15PKNDO8mw185wtJEbV7gMRtnDF7k8z_G/view)
 
 
 ## Materiais de referência
