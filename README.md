@@ -4,7 +4,7 @@ O objetivo deste projeto foi a implementação de um sistema Iot com o uso do pr
 ## Equipe de desenvolvimento
 - [Lara Esquivel](github.com/laraesquivel)
 - [Diego Rocha](github.com/Diego10Rocha)
-- [Israel Braitt](github.com/israelbraitt)
+- <s>[Israel Braitt](github.com/israelbraitt)</s>
 
 ## Descrição do problema
 
